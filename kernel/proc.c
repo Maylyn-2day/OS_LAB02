@@ -270,7 +270,9 @@ growproc(int n)
   } else if(n < 0){
     sz = uvmdealloc(p->pagetable, sz, sz + n);
   }
+  acquire(&p->lock);
   p->sz = sz;
+  release(&p->lock);
   return 0;
 }
 
