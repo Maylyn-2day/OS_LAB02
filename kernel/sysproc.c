@@ -5,6 +5,7 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "ptree.h"
 
 uint64
 sys_exit(void)
@@ -90,4 +91,11 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+// Milestone 3A stub: no snapshot collection or argument validation yet.
+uint64
+sys_ptree(void)
+{
+  return -1;
 }
