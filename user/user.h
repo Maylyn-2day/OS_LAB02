@@ -43,3 +43,6 @@ void* malloc(uint);
 void free(void*);
 
 int trace(int);
+
+struct sysinfo;
+int sysinfo(struct sysinfo *);
