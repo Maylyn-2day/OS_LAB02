@@ -93,9 +93,13 @@ sys_uptime(void)
   return xticks;
 }
 
-// Milestone 3A stub: no snapshot collection or argument validation yet.
 uint64
 sys_ptree(void)
 {
-  return -1;
+  uint64 buf;
+  int max;
+
+  argaddr(0, &buf);
+  argint(1, &max);
+  return procptree(buf, max);
 }

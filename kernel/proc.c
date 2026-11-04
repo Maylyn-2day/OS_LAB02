@@ -4,7 +4,11 @@
 #include "riscv.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "ptree.h"
 #include "defs.h"
+
+_Static_assert(NPROC * sizeof(struct ptreeinfo) <= PGSIZE,
+               "ptree snapshot must fit in one page");
 
 struct cpu cpus[NCPU];
 
@@ -664,6 +668,52 @@ either_copyin(void *dst, int user_src, uint64 src, uint64 len)
     memmove(dst, (char*)src, len);
     return 0;
   }
+}
+
+// Collect a bounded scan, not a single-instant image of the whole table.
+int
+procptree(uint64 addr, int max)
+{
+  struct proc *p;
+  struct proc *caller = myproc();
+  struct ptreeinfo *snapshot;
+  int capacity, n = 0, result = -1;
+  uint64 bytes;
+
+  if(max <= 0 || addr == 0 || addr >= MAXVA)
+    return -1;
+  capacity = max < NPROC ? max : NPROC;
+  if((snapshot = kalloc()) == 0)
+    return -1;
+  memset(snapshot, 0, PGSIZE);
+
+  // Stabilize published parent links and their lifetimes during the scan.
+  acquire(&wait_lock);
+  for(p = proc; p < &proc[NPROC] && n < capacity; p++){
+    acquire(&p->lock);
+    if(p->state != UNUSED){
+      snapshot[n].pid = p->pid;
+      snapshot[n].ppid = p->parent ? p->parent->pid : 0;
+      snapshot[n].state = p->state;
+      snapshot[n].memsize = p->sz;
+      safestrcpy(snapshot[n].name, p->name, sizeof(snapshot[n].name));
+      n++;
+    }
+    release(&p->lock);
+  }
+  release(&wait_lock);
+
+  // Check only the bytes to be written. Subtractions avoid address overflow.
+  bytes = (uint64)n * sizeof(*snapshot);
+  if(addr > caller->sz || bytes > caller->sz - addr || bytes > MAXVA - addr)
+    goto out;
+  if(copyout(caller->pagetable, addr, (char *)snapshot, bytes) < 0)
+    goto out;
+  result = n;
+
+out:
+  kfree(snapshot);
+  return result;
 }
 
 // Print a process listing to console.  For debugging.
