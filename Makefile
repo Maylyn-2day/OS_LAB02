@@ -126,6 +126,11 @@ UPROGS=\
 	$U/_cat\
 	$U/_echo\
 	$U/_forktest\
+	$U/_ptreecheck\
+	$U/_ptreetest\
+	$U/_ptreestress\
+	$U/_pstree\
+	$U/_pstreeprobe\
 	$U/_grep\
 	$U/_init\
 	$U/_kill\
